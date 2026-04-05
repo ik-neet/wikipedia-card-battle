@@ -43,7 +43,17 @@ export default function DrawScreen({ state, onRedraw, onRetry, onStartBattle, on
           <>
             <div className="flex flex-wrap gap-3 justify-center mb-6">
               {playerHand.map(card => (
-                <Card key={card.id} card={card} variant="player" />
+                <div key={card.id} className="flex flex-col items-center gap-1">
+                  <Card card={card} variant="player" />
+                  <a
+                    href={`https://ja.wikipedia.org/wiki/${encodeURIComponent(card.title)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-400 hover:text-blue-300 text-[10px] underline truncate max-w-[7rem]"
+                  >
+                    記事を見る
+                  </a>
+                </div>
               ))}
             </div>
 

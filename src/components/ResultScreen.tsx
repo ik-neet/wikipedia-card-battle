@@ -97,12 +97,26 @@ export default function ResultScreen({ state, onRestart }: Props) {
               <div className="flex gap-2 text-xs">
                 <div className="flex-1 bg-blue-950/40 rounded-lg px-2 py-1.5">
                   <p className="text-blue-400 font-medium mb-0.5">あなた</p>
-                  <p className="text-white truncate">{result.playerCard.title}</p>
+                  <a
+                    href={`https://ja.wikipedia.org/wiki/${encodeURIComponent(result.playerCard.title)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-white hover:text-blue-300 underline truncate block"
+                  >
+                    {result.playerCard.title}
+                  </a>
                   <p className="text-yellow-300 font-bold">{result.playerCard.power.toLocaleString()}</p>
                 </div>
                 <div className="flex-1 bg-red-950/40 rounded-lg px-2 py-1.5">
                   <p className="text-red-400 font-medium mb-0.5">CPU</p>
-                  <p className="text-white truncate">{result.cpuCard.title}</p>
+                  <a
+                    href={`https://ja.wikipedia.org/wiki/${encodeURIComponent(result.cpuCard.title)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-white hover:text-red-300 underline truncate block"
+                  >
+                    {result.cpuCard.title}
+                  </a>
                   <p className="text-yellow-300 font-bold">{result.cpuCard.power.toLocaleString()}</p>
                 </div>
               </div>
