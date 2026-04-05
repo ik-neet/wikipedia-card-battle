@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { GameState, WikiCard, Difficulty, RoundResult, BattleSubPhase } from '@/types/game'
 import { fetchRandomCards } from '@/lib/wikipedia'
 import { cpuSelectCard } from '@/lib/cpu'
@@ -24,6 +24,8 @@ const initialState: GameState = {
 
 export function useGame() {
   const [state, setState] = useState<GameState>(initialState)
+  const stateRef = useRef<GameState>(initialState)
+  stateRef.current = state
 
   const goToDifficulty = useCallback(() => {
     setState(prev => ({ ...prev, phase: 'difficulty', error: null }))
@@ -73,13 +75,9 @@ export function useGame() {
   }, [])
 
   const redrawCards = useCallback(async () => {
-    let shouldFetch = false
-    setState(prev => {
-      if (prev.redrawsLeft <= 0 || prev.loading) return prev
-      shouldFetch = true
-      return { ...prev, loading: true, error: null, redrawsLeft: prev.redrawsLeft - 1 }
-    })
-    if (!shouldFetch) return
+    const { redrawsLeft, loading } = stateRef.current
+    if (redrawsLeft <= 0 || loading) return
+    setState(prev => ({ ...prev, loading: true, error: null, redrawsLeft: prev.redrawsLeft - 1 }))
     try {
       const playerHand = await fetchRandomCards(5)
       setState(prev => ({ ...prev, playerHand, loading: false }))
