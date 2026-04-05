@@ -110,11 +110,23 @@ export default function BattleScreen({ state, onPlayCard, onNextRound }: Props) 
           <div className="flex items-center gap-3 justify-center mb-3">
             <span className="text-red-400 text-xs w-14 text-right font-medium">CPU</span>
             {cpuFieldCard ? (
-              <Card
-                card={cpuFieldCard}
-                variant="cpu"
-                hidden={battleSubPhase !== 'reveal'}
-              />
+              <div className="flex flex-col items-center gap-1">
+                <Card
+                  card={cpuFieldCard}
+                  variant="cpu"
+                  hidden={battleSubPhase !== 'reveal'}
+                />
+                {battleSubPhase === 'reveal' && (
+                  <a
+                    href={`https://ja.wikipedia.org/wiki/${encodeURIComponent(cpuFieldCard.title)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-red-400 hover:text-red-300 text-[10px] underline truncate max-w-[7rem]"
+                  >
+                    記事を見る
+                  </a>
+                )}
+              </div>
             ) : (
               <div className="w-28 h-40 rounded-lg border-2 border-dashed border-red-900/50 flex items-center justify-center">
                 <span className="text-red-900 text-xs">待機中</span>
@@ -130,7 +142,19 @@ export default function BattleScreen({ state, onPlayCard, onNextRound }: Props) 
           <div className="flex items-center gap-3 justify-center mt-3">
             <span className="text-blue-400 text-xs w-14 text-right font-medium">あなた</span>
             {playerFieldCard ? (
-              <Card card={playerFieldCard} variant="player" hidden={false} />
+              <div className="flex flex-col items-center gap-1">
+                <Card card={playerFieldCard} variant="player" hidden={false} />
+                {battleSubPhase === 'reveal' && (
+                  <a
+                    href={`https://ja.wikipedia.org/wiki/${encodeURIComponent(playerFieldCard.title)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-400 hover:text-blue-300 text-[10px] underline truncate max-w-[7rem]"
+                  >
+                    記事を見る
+                  </a>
+                )}
+              </div>
             ) : (
               <div className="w-28 h-40 rounded-lg border-2 border-dashed border-blue-900/50 flex items-center justify-center">
                 <span className="text-blue-900 text-xs">
