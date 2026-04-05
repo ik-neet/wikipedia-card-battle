@@ -23,6 +23,13 @@ export default function Card({
 }: CardProps) {
   const sizeClass = small ? 'w-20 h-28' : 'w-28 h-40'
 
+  const getPowerColor = (power: number) => {
+    if (power >= 100000) return 'text-red-800'
+    if (power >= 50000) return 'text-red-500'
+    if (power >= 10000) return 'text-orange-400'
+    return 'text-yellow-300'
+  }
+
   if (faceDown) {
     return (
       <div
@@ -70,7 +77,7 @@ export default function Card({
         <p className={`${powerLabels[variant]} ${small ? 'text-[9px]' : 'text-[10px]'} font-medium`}>
           POWER
         </p>
-        <p className={`font-bold ${small ? 'text-sm' : 'text-base'} ${hidden ? 'text-gray-400 tracking-widest' : 'text-yellow-300'}`}>
+        <p className={`font-bold ${small ? 'text-sm' : 'text-base'} ${hidden ? 'text-gray-400 tracking-widest' : getPowerColor(card.power)}`}>
           {hidden ? '???' : card.power.toLocaleString()}
         </p>
       </div>
