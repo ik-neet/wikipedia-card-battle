@@ -70,8 +70,10 @@ export function useMultiplayerGame() {
       if (err) throw err
       setRoom(data as Room)
       setRole('host')
-    } catch {
-      setError('ルームの作成に失敗しました。')
+    } catch (e: unknown) {
+      console.error('createRoom error:', e)
+      const msg = e instanceof Error ? e.message : JSON.stringify(e)
+      setError(`ルームの作成に失敗しました: ${msg}`)
     } finally {
       setLoading(false)
     }
