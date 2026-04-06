@@ -23,6 +23,7 @@ export default function BattleScreen({ state, onPlayCard, onNextRound }: Props) 
   } = state
 
   const isLastRound = round === 4
+  const showFirstAttackNotice = round === 0 && battleSubPhase === 'attacker_select'
 
   // プレイヤーがカードを選べるか
   const canPlayerSelect =
@@ -168,6 +169,13 @@ export default function BattleScreen({ state, onPlayCard, onNextRound }: Props) 
 
       {/* メッセージ・アクション */}
       <div className="px-4 py-3 text-center min-h-[80px] flex flex-col items-center justify-center gap-2">
+        {showFirstAttackNotice && (
+          <p className="text-gray-300 text-xs mb-1">
+            手札の合計パワーが高いため、
+            <span className="text-yellow-400 font-bold">{playerFirst ? 'あなた' : 'CPU'}</span>
+            が先攻となります。
+          </p>
+        )}
         <p className={`text-base font-bold ${messageColor}`}>{getMessage()}</p>
         {battleSubPhase === 'reveal' && (
           <button
