@@ -12,7 +12,7 @@ interface Props {
 
 export default function MultiplayerGame({ onBack }: Props) {
   const game = useMultiplayerGame()
-  const { room, role, loading, error } = game
+  const { room, role, loading, error, myName, opponentName } = game
 
   // drawing フェーズに入ったら初期手札を取得
   useEffect(() => {
@@ -41,7 +41,7 @@ export default function MultiplayerGame({ onBack }: Props) {
       <div className="min-h-screen bg-gradient-to-b from-[#0a1628] to-[#0d2444] flex flex-col items-center justify-center p-4">
         <div className="text-center">
           <div className="text-5xl mb-4 animate-pulse">⏳</div>
-          <h2 className="text-2xl font-bold text-white mb-2">対戦相手を待っています</h2>
+          <h2 className="text-2xl font-bold text-white mb-2">{myName} — 対戦相手を待っています</h2>
           <p className="text-gray-400 text-sm mb-6">以下のルームコードを相手に教えてください</p>
           <div className="bg-white/10 border border-white/20 rounded-2xl px-10 py-4 mb-4 inline-block">
             <p className="text-gray-400 text-xs mb-1">ルームコード</p>
@@ -90,6 +90,8 @@ export default function MultiplayerGame({ onBack }: Props) {
         opponentScore={game.opponentScore}
         isMyAttacker={game.isMyAttacker}
         amFirst={game.amFirst}
+        myName={myName}
+        opponentName={opponentName}
         onPlayCard={game.playCard}
         onNextRound={game.nextRound}
       />
@@ -103,6 +105,8 @@ export default function MultiplayerGame({ onBack }: Props) {
       role={role}
       myScore={game.myScore}
       opponentScore={game.opponentScore}
+      myName={myName}
+      opponentName={opponentName}
       onRestart={game.reset}
     />
   )

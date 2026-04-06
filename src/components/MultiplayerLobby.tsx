@@ -3,8 +3,8 @@ import { useState } from 'react'
 import { RoomSettings } from '@/types/room'
 
 interface Props {
-  onCreateRoom: (settings: RoomSettings) => void
-  onJoinRoom: (code: string) => void
+  onCreateRoom: (settings: RoomSettings, name: string) => void
+  onJoinRoom: (code: string, name: string) => void
   loading: boolean
   error: string | null
   onBack: () => void
@@ -14,12 +14,18 @@ export default function MultiplayerLobby({ onCreateRoom, onJoinRoom, loading, er
   const [view, setView] = useState<'menu' | 'create' | 'join'>('menu')
   const [settings, setSettings] = useState<RoomSettings>({ redrawsLeft: 3, handSize: 5, rounds: 5 })
   const [joinCode, setJoinCode] = useState('')
+  const [playerName, setPlayerName] = useState('')
 
   const roundsError = settings.rounds > settings.handSize
 
   const handleCreate = () => {
-    if (roundsError) return
-    onCreateRoom(settings)
+    if (roundsError || !playerName.trim()) return
+    onCreateRoom(settings, playerName.trim())
+  }
+
+  const handleJoin = () => {
+    if (joinCode.length < 6 || !playerName.trim()) return
+    onJoinRoom(joinCode, playerName.trim())
   }
 
   const setHandSize = (v: number) => {
@@ -77,6 +83,19 @@ export default function MultiplayerLobby({ onCreateRoom, onJoinRoom, loading, er
           <h2 className="text-2xl font-bold text-white text-center mb-1">ルームを作成</h2>
           <p className="text-gray-400 text-sm text-center mb-6">ルールをカスタマイズできます</p>
 
+          {/* プレイヤー名 */}
+          <div className="mb-4">
+            <label className="text-gray-300 text-sm font-medium block mb-2">あなたの名前</label>
+            <input
+              type="text"
+              value={playerName}
+              onChange={e => setPlayerName(e.target.value)}
+              placeholder="名前を入力"
+              maxLength={20}
+              className="w-full py-2.5 px-4 bg-white/10 border border-white/20 rounded-xl text-white placeholder-gray-600 outline-none focus:border-blue-500"
+            />
+          </div>
+
           <div className="flex flex-col gap-3 mb-6">
             {/* 引き直し回数 */}
             <div className="bg-white/5 border border-white/10 rounded-xl p-4">
@@ -131,7 +150,7 @@ export default function MultiplayerLobby({ onCreateRoom, onJoinRoom, loading, er
 
           <button
             onClick={handleCreate}
-            disabled={loading || roundsError}
+            disabled={loading || roundsError || !playerName.trim()}
             className="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition-colors disabled:opacity-50"
           >
             {loading ? 'ルームを作成中...' : 'ルームを作成する'}
@@ -152,6 +171,19 @@ export default function MultiplayerLobby({ onCreateRoom, onJoinRoom, loading, er
         <h2 className="text-2xl font-bold text-white text-center mb-1">ルームに入る</h2>
         <p className="text-gray-400 text-sm text-center mb-6">ルームコードを入力してください</p>
 
+        <div className="mb-4">
+          <label className="text-gray-300 text-sm font-medium block mb-2">あなたの名前</label>
+          <input
+            type="text"
+            value={playerName}
+            onChange={e => setPlayerName(e.target.value)}
+            placeholder="名前を入力"
+            maxLength={20}
+            className="w-full py-2.5 px-4 bg-white/10 border border-white/20 rounded-xl text-white placeholder-gray-600 outline-none focus:border-blue-500"
+          />
+        </div>
+
+        <label className="text-gray-300 text-sm font-medium block mb-2">ルームコード</label>
         <input
           type="text"
           value={joinCode}
@@ -164,8 +196,8 @@ export default function MultiplayerLobby({ onCreateRoom, onJoinRoom, loading, er
         {error && <p className="text-red-400 text-sm text-center mb-4">{error}</p>}
 
         <button
-          onClick={() => onJoinRoom(joinCode)}
-          disabled={loading || joinCode.length < 6}
+          onClick={handleJoin}
+          disabled={loading || joinCode.length < 6 || !playerName.trim()}
           className="w-full py-3 bg-green-600 hover:bg-green-500 text-white font-bold rounded-xl transition-colors disabled:opacity-50"
         >
           {loading ? '参加中...' : 'ルームに参加する'}

@@ -5,10 +5,12 @@ interface Props {
   role: PlayerRole
   myScore: number
   opponentScore: number
+  myName: string
+  opponentName: string
   onRestart: () => void
 }
 
-export default function MultiplayerResultScreen({ room, role, myScore, opponentScore, onRestart }: Props) {
+export default function MultiplayerResultScreen({ room, role, myScore, opponentScore, myName, opponentName, onRestart }: Props) {
   const isWin = myScore > opponentScore
   const isLose = myScore < opponentScore
 
@@ -19,13 +21,13 @@ export default function MultiplayerResultScreen({ room, role, myScore, opponentS
         {isWin && (
           <>
             <div className="text-6xl mb-2">🏆</div>
-            <h2 className="text-4xl font-bold text-yellow-400">あなたの勝ち！</h2>
+            <h2 className="text-4xl font-bold text-yellow-400">{myName}の勝ち！</h2>
           </>
         )}
         {isLose && (
           <>
             <div className="text-6xl mb-2">💀</div>
-            <h2 className="text-4xl font-bold text-red-400">相手の勝ち...</h2>
+            <h2 className="text-4xl font-bold text-red-400">{opponentName}の勝ち...</h2>
           </>
         )}
         {!isWin && !isLose && (
@@ -36,12 +38,12 @@ export default function MultiplayerResultScreen({ room, role, myScore, opponentS
         )}
         <div className="mt-3 flex items-center justify-center gap-4">
           <div className="text-center">
-            <p className="text-blue-400 text-xs mb-0.5">あなた</p>
+            <p className="text-blue-400 text-xs mb-0.5">{myName}</p>
             <p className="text-blue-400 font-bold text-4xl">{myScore}</p>
           </div>
           <span className="text-gray-600 text-2xl font-bold">-</span>
           <div className="text-center">
-            <p className="text-red-400 text-xs mb-0.5">相手</p>
+            <p className="text-red-400 text-xs mb-0.5">{opponentName}</p>
             <p className="text-red-400 font-bold text-4xl">{opponentScore}</p>
           </div>
         </div>
@@ -70,15 +72,15 @@ export default function MultiplayerResultScreen({ room, role, myScore, opponentS
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-gray-500 text-xs">
                     Round {result.round + 1}
-                    <span className="ml-1 text-gray-600">({attackerWasMe ? 'あなた先攻' : '相手先攻'})</span>
+                    <span className="ml-1 text-gray-600">({attackerWasMe ? `${myName}先攻` : `${opponentName}先攻`})</span>
                   </span>
                   <span className={`text-xs font-bold ${myWin ? 'text-blue-400' : oppWin ? 'text-red-400' : 'text-gray-400'}`}>
-                    {myWin ? '✓ あなたの勝ち' : oppWin ? '✗ 相手の勝ち' : '= 引き分け'}
+                    {myWin ? `✓ ${myName}の勝ち` : oppWin ? `✗ ${opponentName}の勝ち` : '= 引き分け'}
                   </span>
                 </div>
                 <div className="flex gap-2 text-xs">
                   <div className="flex-1 min-w-0 bg-blue-950/40 rounded-lg px-2 py-1.5">
-                    <p className="text-blue-400 font-medium mb-0.5">あなた</p>
+                    <p className="text-blue-400 font-medium mb-0.5">{myName}</p>
                     <a href={`https://ja.wikipedia.org/wiki/${encodeURIComponent(myCard.title)}`}
                       target="_blank" rel="noopener noreferrer"
                       className="text-white hover:text-blue-300 underline block overflow-hidden"
@@ -88,7 +90,7 @@ export default function MultiplayerResultScreen({ room, role, myScore, opponentS
                     <p className="text-yellow-300 font-bold mt-1">{myCard.power.toLocaleString()}</p>
                   </div>
                   <div className="flex-1 min-w-0 bg-red-950/40 rounded-lg px-2 py-1.5">
-                    <p className="text-red-400 font-medium mb-0.5">相手</p>
+                    <p className="text-red-400 font-medium mb-0.5">{opponentName}</p>
                     <a href={`https://ja.wikipedia.org/wiki/${encodeURIComponent(oppCard.title)}`}
                       target="_blank" rel="noopener noreferrer"
                       className="text-white hover:text-red-300 underline block overflow-hidden"

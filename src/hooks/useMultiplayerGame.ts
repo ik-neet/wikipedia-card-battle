@@ -57,14 +57,14 @@ export function useMultiplayerGame() {
 
   // -------- アクション --------
 
-  const createRoom = useCallback(async (settings: RoomSettings) => {
+  const createRoom = useCallback(async (settings: RoomSettings, name: string) => {
     setLoading(true)
     setError(null)
     try {
       const code = generateRoomCode()
       const { data, error: err } = await supabase
         .from('rooms')
-        .insert({ code, settings, host_redraws_left: settings.redrawsLeft, guest_redraws_left: settings.redrawsLeft })
+        .insert({ code, settings, host_name: name || 'ホスト', host_redraws_left: settings.redrawsLeft, guest_redraws_left: settings.redrawsLeft })
         .select()
         .single()
       if (err) throw err
@@ -79,7 +79,7 @@ export function useMultiplayerGame() {
     }
   }, [])
 
-  const joinRoom = useCallback(async (code: string) => {
+  const joinRoom = useCallback(async (code: string, name: string) => {
     setLoading(true)
     setError(null)
     try {
@@ -93,7 +93,7 @@ export function useMultiplayerGame() {
 
       const { error: updErr } = await supabase
         .from('rooms')
-        .update({ status: 'drawing' })
+        .update({ status: 'drawing', guest_name: name || 'ゲスト' })
         .eq('code', data.code)
       if (updErr) throw updErr
 
@@ -237,6 +237,8 @@ export function useMultiplayerGame() {
   }, [])
 
   // -------- 導出値 --------
+  const myName = room && role ? (role === 'host' ? room.host_name : room.guest_name) ?? 'あなた' : 'あなた'
+  const opponentName = room && role ? (role === 'host' ? room.guest_name : room.host_name) ?? '相手' : '相手'
   const myHand = room && role ? (role === 'host' ? room.host_hand : room.guest_hand) : null
   const opponentHand = room && role ? (role === 'host' ? room.guest_hand : room.host_hand) : null
   const myRedraws = room && role ? (role === 'host' ? room.host_redraws_left : room.guest_redraws_left) : 0
@@ -251,6 +253,7 @@ export function useMultiplayerGame() {
 
   return {
     room, role, loading, error,
+    myName, opponentName,
     myHand, opponentHand, myRedraws, myConfirmed, opponentConfirmed,
     myFieldCard, opponentFieldCard, myScore, opponentScore, isMyAttacker, amFirst,
     createRoom, joinRoom, fetchInitialCards, redrawCards, confirmHand, playCard, nextRound, reset,

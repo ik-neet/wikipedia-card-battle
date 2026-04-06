@@ -13,13 +13,15 @@ interface Props {
   opponentScore: number
   isMyAttacker: boolean
   amFirst: boolean
+  myName: string
+  opponentName: string
   onPlayCard: (card: WikiCard) => void
   onNextRound: () => void
 }
 
 export default function MultiplayerBattleScreen({
   room, myHand, opponentHand, myFieldCard, opponentFieldCard,
-  myScore, opponentScore, isMyAttacker, amFirst, onPlayCard, onNextRound,
+  myScore, opponentScore, isMyAttacker, amFirst, myName, opponentName, onPlayCard, onNextRound,
 }: Props) {
   const { round, battle_sub_phase, settings } = room
   const isLastRound = round === settings.rounds - 1
@@ -39,14 +41,14 @@ export default function MultiplayerBattleScreen({
 
   const getMessage = () => {
     if (battle_sub_phase === 'attacker_select') {
-      return isMyAttacker ? '🗡️ あなたの番（先攻）。カードを1枚選んでください。' : '⏳ 相手がカードを選んでいます...'
+      return isMyAttacker ? `🗡️ ${myName}の番（先攻）。カードを1枚選んでください。` : `⏳ ${opponentName}がカードを選んでいます...`
     }
     if (battle_sub_phase === 'defender_select') {
-      return isMyAttacker ? '⏳ 相手が応戦カードを選んでいます...' : '🛡️ 相手がカードを出しました。応戦するカードを選んでください。'
+      return isMyAttacker ? `⏳ ${opponentName}が応戦カードを選んでいます...` : `🛡️ ${opponentName}がカードを出しました。応戦するカードを選んでください。`
     }
     if (battle_sub_phase === 'reveal') {
-      if (roundWinner === 'me') return '🎉 あなたの勝ち！ +1ポイント'
-      if (roundWinner === 'opponent') return '💀 相手の勝ち... +1ポイント（相手）'
+      if (roundWinner === 'me') return `🎉 ${myName}の勝ち！ +1ポイント`
+      if (roundWinner === 'opponent') return `💀 ${opponentName}の勝ち... +1ポイント`
       return '🤝 引き分け'
     }
     return ''
@@ -70,12 +72,12 @@ export default function MultiplayerBattleScreen({
         <div className="text-gray-300 text-sm font-medium">
           ラウンド <span className="text-yellow-400 font-bold">{round + 1}</span> / {settings.rounds}
         </div>
-        <div className="text-gray-400 text-xs">{isMyAttacker ? 'あなた（先攻）' : '相手（先攻）'}</div>
+        <div className="text-gray-400 text-xs">{isMyAttacker ? `${myName}（先攻）` : `${opponentName}（先攻）`}</div>
       </div>
 
       {/* 相手の手札 */}
       <div className="px-3 pt-3 pb-1">
-        <p className="text-gray-500 text-xs text-center mb-2">相手の手札（{opponentHand.length}枚）</p>
+        <p className="text-gray-500 text-xs text-center mb-2">{opponentName}の手札（{opponentHand.length}枚）</p>
         <div className="flex gap-2 justify-center flex-wrap">
           {opponentHand.map(card => (
             <Card key={card.id} card={card} variant="cpu" hidden small />
@@ -88,7 +90,7 @@ export default function MultiplayerBattleScreen({
         <div className="w-full max-w-xs">
           {/* 相手のフィールドカード */}
           <div className="flex items-center gap-3 justify-center mb-3">
-            <span className="text-red-400 text-xs w-14 text-right font-medium">相手</span>
+            <span className="text-red-400 text-xs w-14 text-right font-medium">{opponentName}</span>
             {opponentFieldCard ? (
               <div className="flex flex-col items-center gap-1">
                 <Card card={opponentFieldCard} variant="cpu" hidden={battle_sub_phase !== 'reveal'} />
@@ -113,7 +115,7 @@ export default function MultiplayerBattleScreen({
 
           {/* 自分のフィールドカード */}
           <div className="flex items-center gap-3 justify-center mt-3">
-            <span className="text-blue-400 text-xs w-14 text-right font-medium">あなた</span>
+            <span className="text-blue-400 text-xs w-14 text-right font-medium">{myName}</span>
             {myFieldCard ? (
               <div className="flex flex-col items-center gap-1">
                 <Card card={myFieldCard} variant="player" />
@@ -141,8 +143,9 @@ export default function MultiplayerBattleScreen({
         {showFirstAttackNotice && (
           <p className="text-gray-300 text-xs mb-1">
             手札の合計パワーが高いため、
-            <span className="text-yellow-400 font-bold">{amFirst ? 'あなた' : '相手'}</span>
+            <span className="text-yellow-400 font-bold">{amFirst ? myName : opponentName}</span>
             が先攻となります。
+
           </p>
         )}
         <p className={`text-base font-bold ${messageColor}`}>{getMessage()}</p>
@@ -159,7 +162,7 @@ export default function MultiplayerBattleScreen({
       {/* 自分の手札 */}
       <div className="px-3 pb-4 bg-black/20 pt-3">
         <p className="text-gray-500 text-xs text-center mb-2">
-          あなたの手札（{myHand.length}枚）
+          {myName}の手札（{myHand.length}枚）
           {canPlayCard && <span className="text-yellow-400 ml-1">← タップして選択</span>}
         </p>
         <div className="flex gap-2 justify-center flex-wrap">

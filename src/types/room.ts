@@ -23,6 +23,9 @@ export interface Room {
   settings: RoomSettings
   status: RoomStatus
 
+  host_name: string | null
+  guest_name: string | null
+
   host_hand: WikiCard[] | null
   guest_hand: WikiCard[] | null
   host_redraws_left: number

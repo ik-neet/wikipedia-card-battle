@@ -25,6 +25,10 @@ create table if not exists rooms (
   created_at timestamptz not null default now()
 );
 
+-- プレイヤー名カラム追加（既存テーブルへの追加）
+alter table rooms add column if not exists host_name text;
+alter table rooms add column if not exists guest_name text;
+
 -- RLS 有効化
 alter table rooms enable row level security;
 
