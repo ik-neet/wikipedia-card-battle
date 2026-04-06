@@ -95,29 +95,31 @@ export default function ResultScreen({ state, onRestart }: Props) {
               </div>
 
               <div className="flex gap-2 text-xs">
-                <div className="flex-1 bg-blue-950/40 rounded-lg px-2 py-1.5">
+                <div className="flex-1 min-w-0 bg-blue-950/40 rounded-lg px-2 py-1.5">
                   <p className="text-blue-400 font-medium mb-0.5">あなた</p>
                   <a
                     href={`https://ja.wikipedia.org/wiki/${encodeURIComponent(result.playerCard.title)}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-white hover:text-blue-300 underline truncate block"
+                    className="text-white hover:text-blue-300 underline block overflow-hidden"
+                    style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}
                   >
                     {result.playerCard.title}
                   </a>
-                  <p className="text-yellow-300 font-bold">{result.playerCard.power.toLocaleString()}</p>
+                  <p className="text-yellow-300 font-bold mt-1">{result.playerCard.power.toLocaleString()}</p>
                 </div>
-                <div className="flex-1 bg-red-950/40 rounded-lg px-2 py-1.5">
+                <div className="flex-1 min-w-0 bg-red-950/40 rounded-lg px-2 py-1.5">
                   <p className="text-red-400 font-medium mb-0.5">CPU</p>
                   <a
                     href={`https://ja.wikipedia.org/wiki/${encodeURIComponent(result.cpuCard.title)}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-white hover:text-red-300 underline truncate block"
+                    className="text-white hover:text-red-300 underline block overflow-hidden"
+                    style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}
                   >
                     {result.cpuCard.title}
                   </a>
-                  <p className="text-yellow-300 font-bold">{result.cpuCard.power.toLocaleString()}</p>
+                  <p className="text-yellow-300 font-bold mt-1">{result.cpuCard.power.toLocaleString()}</p>
                 </div>
               </div>
             </div>
