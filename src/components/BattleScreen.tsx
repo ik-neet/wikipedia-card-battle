@@ -19,7 +19,6 @@ export default function BattleScreen({ state, onPlayCard, onNextRound }: Props) 
     cpuHand,
     playerFieldCard,
     cpuFieldCard,
-    roundResults,
   } = state
 
   const isLastRound = round === 4
@@ -94,12 +93,6 @@ export default function BattleScreen({ state, onPlayCard, onNextRound }: Props) 
         <div className="flex gap-2 justify-center flex-wrap">
           {cpuHand.map(card => (
             <Card key={card.id} card={card} variant="cpu" hidden small />
-          ))}
-          {roundResults.map((_, i) => (
-            <div
-              key={`empty-cpu-${i}`}
-              className="w-20 h-28 rounded-lg border border-dashed border-gray-800 opacity-20"
-            />
           ))}
         </div>
       </div>
@@ -205,12 +198,6 @@ export default function BattleScreen({ state, onPlayCard, onNextRound }: Props) 
               clickable={canPlayerSelect}
               small
               onClick={() => onPlayCard(card)}
-            />
-          ))}
-          {roundResults.map((_, i) => (
-            <div
-              key={`empty-player-${i}`}
-              className="w-20 h-28 rounded-lg border border-dashed border-gray-800 opacity-20"
             />
           ))}
         </div>
