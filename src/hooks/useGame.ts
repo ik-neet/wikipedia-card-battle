@@ -43,10 +43,15 @@ export function useGame() {
       cpuHand: [],
     }))
     try {
-      const [playerHand, cpuHand] = await Promise.all([
+      const cpuDrawCount = difficulty === 'strong' ? 10 : 5
+      const [playerHand, cpuDrawn] = await Promise.all([
         fetchRandomCards(5),
-        fetchRandomCards(5),
+        fetchRandomCards(cpuDrawCount),
       ])
+      const cpuHand =
+        difficulty === 'strong'
+          ? [...cpuDrawn].sort((a, b) => b.power - a.power).slice(0, 5)
+          : cpuDrawn
       setState(prev => ({ ...prev, playerHand, cpuHand, loading: false }))
     } catch {
       setState(prev => ({

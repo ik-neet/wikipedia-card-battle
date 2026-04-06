@@ -31,9 +31,11 @@ export function cpuSelectCard({ hand, opponentCard, difficulty, isAttacker }: Se
     return random()
   }
 
-  // 強い: 相手より強いカードをランダムで出す。なければ最弱カード
+  // 強い: 相手より強いカードの中でパワーが一番近いカードを出す。なければ最弱カード
   if (stronger.length > 0) {
-    return stronger[Math.floor(Math.random() * stronger.length)]
+    return stronger.reduce((closest, c) =>
+      c.power - opponentPower < closest.power - opponentPower ? c : closest
+    )
   }
   return hand.reduce((min, c) => c.power < min.power ? c : min)
 }
