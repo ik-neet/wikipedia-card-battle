@@ -1,20 +1,39 @@
 'use client'
 
+export const dynamic = 'force-dynamic'
+
+import { useState } from 'react'
 import { useGame } from '@/hooks/useGame'
 import TitleScreen from '@/components/TitleScreen'
 import DifficultyScreen from '@/components/DifficultyScreen'
 import DrawScreen from '@/components/DrawScreen'
 import BattleScreen from '@/components/BattleScreen'
 import ResultScreen from '@/components/ResultScreen'
+import MultiplayerGame from '@/components/MultiplayerGame'
+
+type TopMode = 'cpu' | 'multiplayer'
 
 export default function Home() {
   const game = useGame()
   const { state } = game
+  const [topMode, setTopMode] = useState<TopMode>('cpu')
+
+  const goToTitle = () => {
+    game.reset()
+    setTopMode('cpu')
+  }
 
   return (
     <main className="min-h-screen">
-      {state.phase === 'title' && (
-        <TitleScreen onStart={game.goToDifficulty} />
+      {state.phase === 'title' && topMode === 'cpu' && (
+        <TitleScreen
+          onStart={game.goToDifficulty}
+          onMultiplayer={() => setTopMode('multiplayer')}
+        />
+      )}
+
+      {state.phase === 'title' && topMode === 'multiplayer' && (
+        <MultiplayerGame onBack={goToTitle} />
       )}
 
       {state.phase === 'difficulty' && (

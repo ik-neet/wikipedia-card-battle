@@ -4,6 +4,7 @@ import { useState } from 'react'
 
 interface Props {
   onStart: () => void
+  onMultiplayer: () => void
 }
 
 const rules = [
@@ -33,7 +34,7 @@ const rules = [
   },
 ]
 
-export default function TitleScreen({ onStart }: Props) {
+export default function TitleScreen({ onStart, onMultiplayer }: Props) {
   const [showRules, setShowRules] = useState(false)
 
   if (showRules) {
@@ -87,12 +88,20 @@ export default function TitleScreen({ onStart }: Props) {
         <p className="text-gray-500 mb-12 text-xs max-w-xs mx-auto">
           記事の情報量がカードのパワーになる！
         </p>
-        <button
-          onClick={onStart}
-          className="px-14 py-4 bg-yellow-500 hover:bg-yellow-400 text-black font-bold text-xl rounded-full transition-all transform hover:scale-105 shadow-xl"
-        >
-          ゲームスタート
-        </button>
+        <div className="flex flex-col items-center gap-3">
+          <button
+            onClick={onStart}
+            className="px-14 py-4 bg-yellow-500 hover:bg-yellow-400 text-black font-bold text-xl rounded-full transition-all transform hover:scale-105 shadow-xl w-64"
+          >
+            🤖 CPU対戦
+          </button>
+          <button
+            onClick={onMultiplayer}
+            className="px-14 py-4 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xl rounded-full transition-all transform hover:scale-105 shadow-xl w-64"
+          >
+            👥 対人戦
+          </button>
+        </div>
         <div className="mt-5">
           <button
             onClick={() => setShowRules(true)}
@@ -101,7 +110,6 @@ export default function TitleScreen({ onStart }: Props) {
             ルールを見る
           </button>
         </div>
-        <p className="text-gray-600 text-xs mt-6">CPU対戦モード</p>
       </div>
     </div>
   )
