@@ -10,7 +10,7 @@ const initialState: GameState = {
   cpuHand: [],
   playerScore: 0,
   cpuScore: 0,
-  redrawsLeft: 2,
+  redrawsLeft: 3,
   playerFirst: true,
   round: 0,
   playerIsAttacker: true,
@@ -38,7 +38,7 @@ export function useGame() {
       error: null,
       difficulty,
       phase: 'drawing',
-      redrawsLeft: 2,
+      redrawsLeft: 3,
       playerHand: [],
       cpuHand: [],
     }))
