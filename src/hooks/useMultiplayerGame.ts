@@ -65,7 +65,7 @@ export function useMultiplayerGame() {
         .select('*', { count: 'exact', head: true })
         .in('status', ['waiting', 'drawing', 'battle'])
       if (countErr) throw countErr
-      if ((count ?? 0) >= 25) throw new Error('現在サーバーが混雑しています。しばらくしてからお試しください。（上限: 50ユーザー）')
+      if ((count ?? 0) >= 50) throw new Error('現在サーバーが混雑しています。しばらくしてからお試しください。（上限: 100ユーザー）')
 
       const code = generateRoomCode()
       const { data, error: err } = await supabase
