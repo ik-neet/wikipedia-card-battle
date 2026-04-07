@@ -107,6 +107,7 @@ export default function MultiplayerGame({ onBack }: Props) {
       opponentScore={game.opponentScore}
       myName={myName}
       opponentName={opponentName}
+      onRematch={game.requestRematch}
       onRestart={game.reset}
     />
   )

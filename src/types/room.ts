@@ -25,6 +25,7 @@ export interface Room {
 
   host_name: string | null
   guest_name: string | null
+  rematch_code: string | null
 
   host_hand: WikiCard[] | null
   guest_hand: WikiCard[] | null

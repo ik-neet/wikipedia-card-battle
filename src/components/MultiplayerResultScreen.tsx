@@ -7,10 +7,11 @@ interface Props {
   opponentScore: number
   myName: string
   opponentName: string
+  onRematch: () => void
   onRestart: () => void
 }
 
-export default function MultiplayerResultScreen({ room, role, myScore, opponentScore, myName, opponentName, onRestart }: Props) {
+export default function MultiplayerResultScreen({ room, role, myScore, opponentScore, myName, opponentName, onRematch, onRestart }: Props) {
   const isWin = myScore > opponentScore
   const isLose = myScore < opponentScore
 
@@ -106,12 +107,26 @@ export default function MultiplayerResultScreen({ room, role, myScore, opponentS
         </div>
       </div>
 
-      <button
-        onClick={onRestart}
-        className="px-12 py-4 bg-yellow-500 hover:bg-yellow-400 text-black font-bold text-xl rounded-full transition-all transform hover:scale-105 shadow-xl mb-8"
-      >
-        タイトルに戻る
-      </button>
+      <div className="flex flex-col items-center gap-3 mb-8">
+        {role === 'host' ? (
+          <button
+            onClick={onRematch}
+            className="px-12 py-4 bg-blue-500 hover:bg-blue-400 text-white font-bold text-xl rounded-full transition-all transform hover:scale-105 shadow-xl"
+          >
+            同じメンバーで再戦
+          </button>
+        ) : (
+          room.rematch_code == null
+            ? <p className="text-gray-400 text-sm animate-pulse">ホストが再戦を申し込むのを待っています...</p>
+            : <p className="text-green-400 text-sm animate-pulse">再戦ルームに移動中...</p>
+        )}
+        <button
+          onClick={onRestart}
+          className="px-12 py-4 bg-yellow-500 hover:bg-yellow-400 text-black font-bold text-xl rounded-full transition-all transform hover:scale-105 shadow-xl"
+        >
+          タイトルに戻る
+        </button>
+      </div>
     </div>
   )
 }

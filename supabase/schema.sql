@@ -29,6 +29,9 @@ create table if not exists rooms (
 alter table rooms add column if not exists host_name text;
 alter table rooms add column if not exists guest_name text;
 
+-- 再戦コードカラム追加
+alter table rooms add column if not exists rematch_code text;
+
 -- RLS 有効化
 alter table rooms enable row level security;
 

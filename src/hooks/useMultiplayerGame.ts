@@ -6,8 +6,7 @@ import { WikiCard } from '@/types/game'
 import { fetchRandomCards } from '@/lib/wikipedia'
 
 function generateRoomCode(): string {
-  const chars = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'
-  return Array.from({ length: 6 }, () => chars[Math.floor(Math.random() * chars.length)]).join('')
+  return Math.floor(1000 + Math.random() * 9000).toString()
 }
 
 export function useMultiplayerGame() {
@@ -61,6 +60,13 @@ export function useMultiplayerGame() {
     setLoading(true)
     setError(null)
     try {
+      const { count, error: countErr } = await supabase
+        .from('rooms')
+        .select('*', { count: 'exact', head: true })
+        .in('status', ['waiting', 'drawing', 'battle'])
+      if (countErr) throw countErr
+      if ((count ?? 0) >= 25) throw new Error('現在サーバーが混雑しています。しばらくしてからお試しください。（上限: 50ユーザー）')
+
       const code = generateRoomCode()
       const { data, error: err } = await supabase
         .from('rooms')
@@ -86,7 +92,7 @@ export function useMultiplayerGame() {
       const { data, error: err } = await supabase
         .from('rooms')
         .select()
-        .eq('code', code.toUpperCase().trim())
+        .eq('code', code.trim())
         .eq('status', 'waiting')
         .single()
       if (err || !data) throw new Error('ルームが見つかりません')
@@ -229,6 +235,61 @@ export function useMultiplayerGame() {
       .eq('battle_sub_phase', 'reveal')
   }, [])
 
+  const requestRematch = useCallback(async () => {
+    const r = roomRef.current
+    const rl = roleRef.current
+    if (!r || rl !== 'host') return
+
+    setLoading(true)
+    setError(null)
+    try {
+      const newCode = generateRoomCode()
+      const { data, error: err } = await supabase
+        .from('rooms')
+        .insert({ code: newCode, settings: r.settings, host_name: r.host_name, host_redraws_left: r.settings.redrawsLeft, guest_redraws_left: r.settings.redrawsLeft })
+        .select()
+        .single()
+      if (err) throw err
+
+      await supabase.from('rooms').update({ rematch_code: newCode }).eq('code', r.code)
+
+      setRoom(data as Room)
+      setRole('host')
+    } catch (e: unknown) {
+      console.error('requestRematch error:', e)
+      const msg = e instanceof Error ? e.message : JSON.stringify(e)
+      setError(`再戦の作成に失敗しました: ${msg}`)
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  // ゲスト側: rematch_code が設定されたら新しいルームに自動参加
+  useEffect(() => {
+    if (roleRef.current !== 'guest') return
+    const r = roomRef.current
+    if (!r?.rematch_code) return
+
+    const newCode = r.rematch_code
+    const guestName = r.guest_name ?? 'ゲスト';
+
+    (async () => {
+      try {
+        const { data, error: updErr } = await supabase
+          .from('rooms')
+          .update({ status: 'drawing', guest_name: guestName })
+          .eq('code', newCode)
+          .eq('status', 'waiting')
+          .select()
+          .single()
+        if (updErr || !data) return
+        setRoom(data as Room)
+        setRole('guest')
+      } catch { /* ignore */ }
+    })()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [room?.rematch_code])
+
   const reset = useCallback(() => {
     setRoom(null)
     setRole(null)
@@ -256,6 +317,6 @@ export function useMultiplayerGame() {
     myName, opponentName,
     myHand, opponentHand, myRedraws, myConfirmed, opponentConfirmed,
     myFieldCard, opponentFieldCard, myScore, opponentScore, isMyAttacker, amFirst,
-    createRoom, joinRoom, fetchInitialCards, redrawCards, confirmHand, playCard, nextRound, reset,
+    createRoom, joinRoom, fetchInitialCards, redrawCards, confirmHand, playCard, nextRound, requestRematch, reset,
   }
 }

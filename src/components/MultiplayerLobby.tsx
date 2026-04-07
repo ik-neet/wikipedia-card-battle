@@ -24,7 +24,7 @@ export default function MultiplayerLobby({ onCreateRoom, onJoinRoom, loading, er
   }
 
   const handleJoin = () => {
-    if (joinCode.length < 6 || !playerName.trim()) return
+    if (joinCode.length < 4 || !playerName.trim()) return
     onJoinRoom(joinCode, playerName.trim())
   }
 
@@ -187,9 +187,9 @@ export default function MultiplayerLobby({ onCreateRoom, onJoinRoom, loading, er
         <input
           type="text"
           value={joinCode}
-          onChange={e => setJoinCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ''))}
-          placeholder="例: ABC123"
-          maxLength={6}
+          onChange={e => setJoinCode(e.target.value.replace(/[^0-9]/g, ''))}
+          placeholder="例: 1234"
+          maxLength={4}
           className="w-full py-3 px-4 bg-white/10 border border-white/20 rounded-xl text-white text-center text-2xl font-bold tracking-widest placeholder-gray-600 outline-none focus:border-blue-500 mb-4"
         />
 
@@ -197,7 +197,7 @@ export default function MultiplayerLobby({ onCreateRoom, onJoinRoom, loading, er
 
         <button
           onClick={handleJoin}
-          disabled={loading || joinCode.length < 6 || !playerName.trim()}
+          disabled={loading || joinCode.length < 4 || !playerName.trim()}
           className="w-full py-3 bg-green-600 hover:bg-green-500 text-white font-bold rounded-xl transition-colors disabled:opacity-50"
         >
           {loading ? '参加中...' : 'ルームに参加する'}
