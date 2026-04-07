@@ -44,3 +44,11 @@ create policy "Allow all for anon" on rooms
 
 -- リアルタイム有効化
 alter publication supabase_realtime add table rooms;
+
+-- 古いルームの自動削除（30分ごとに1時間以上経過したルームを削除）
+-- 事前に Supabase ダッシュボード > Database > Extensions で pg_cron を有効化すること
+select cron.schedule(
+  'delete-old-rooms',
+  '*/30 * * * *',
+  $$delete from rooms where created_at < now() - interval '1 hour'$$
+);
