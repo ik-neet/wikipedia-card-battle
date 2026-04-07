@@ -35,12 +35,15 @@ alter table rooms add column if not exists rematch_code text;
 -- RLS 有効化
 alter table rooms enable row level security;
 
--- 匿名ユーザーに全操作を許可
-create policy "Allow all for anon" on rooms
-  for all
-  to anon
-  using (true)
-  with check (true);
+-- 匿名ユーザーに SELECT / INSERT / UPDATE を許可（DELETE は pg_cron のみ）
+create policy "anon select" on rooms
+  for select to anon using (true);
+
+create policy "anon insert" on rooms
+  for insert to anon with check (true);
+
+create policy "anon update" on rooms
+  for update to anon using (true) with check (true);
 
 -- リアルタイム有効化
 alter publication supabase_realtime add table rooms;
