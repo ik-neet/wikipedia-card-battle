@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { RoomSettings } from '@/types/room'
 
 interface Props {
@@ -14,7 +14,12 @@ export default function MultiplayerLobby({ onCreateRoom, onJoinRoom, loading, er
   const [view, setView] = useState<'menu' | 'create' | 'join'>('menu')
   const [settings, setSettings] = useState<RoomSettings>({ redrawsLeft: 3, handSize: 5, rounds: 5 })
   const [joinCode, setJoinCode] = useState('')
-  const [playerName, setPlayerName] = useState('')
+  const [playerName, setPlayerName] = useState('Player1')
+
+  useEffect(() => {
+    if (view === 'create') setPlayerName('Player1')
+    if (view === 'join') setPlayerName('Player2')
+  }, [view])
 
   const roundsError = settings.rounds > settings.handSize
 
