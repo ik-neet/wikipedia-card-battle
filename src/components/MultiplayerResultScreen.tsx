@@ -1,4 +1,5 @@
 import { Room, PlayerRole, MultiplayerRoundResult } from '@/types/room'
+import ShareButtons from './ShareButtons'
 
 interface Props {
   room: Room
@@ -106,6 +107,12 @@ export default function MultiplayerResultScreen({ room, role, myScore, opponentS
           })}
         </div>
       </div>
+
+      <ShareButtons text={
+        `【Wikipedia Card Battle】対人戦\n` +
+        `${myName} ${myScore} - ${opponentScore} ${opponentName}\n` +
+        (isWin ? `${myName}の勝ち！🏆` : isLose ? `${opponentName}の勝ち...💀` : '引き分け🤝')
+      } />
 
       <div className="flex flex-col items-center gap-3 mb-8">
         {role === 'host' ? (

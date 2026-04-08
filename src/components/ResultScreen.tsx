@@ -1,4 +1,5 @@
 import { GameState } from '@/types/game'
+import ShareButtons from './ShareButtons'
 
 interface Props {
   state: GameState
@@ -126,6 +127,12 @@ export default function ResultScreen({ state, onRestart }: Props) {
           ))}
         </div>
       </div>
+
+      <ShareButtons text={
+        `【Wikipedia Card Battle】CPU戦（${difficultyLabel[difficulty]}）\n` +
+        `あなた ${playerScore} - ${cpuScore} CPU\n` +
+        (isWin ? 'あなたの勝ち！🏆' : isLose ? 'CPUの勝ち...💀' : '引き分け🤝')
+      } />
 
       <button
         onClick={onRestart}
