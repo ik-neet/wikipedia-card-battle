@@ -16,29 +16,34 @@ npm run lint      # ESLint check
 ## Environment Variables
 
 Required in `.env.local` (local) and Vercel dashboard (production):
-- `NEXT_PUBLIC_SUPABASE_URL`
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `NEXT_PUBLIC_FIREBASE_API_KEY`
+- `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN`
+- `NEXT_PUBLIC_FIREBASE_PROJECT_ID`
+- `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET`
+- `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID`
+- `NEXT_PUBLIC_FIREBASE_APP_ID`
 
-The Supabase client (`src/lib/supabase.ts`) throws at runtime if these are missing — this was the cause of the "ルームの作成に失敗しました" production bug.
+See `.env.local.example` for the format. Firebase initializes lazily via `src/lib/firestore.ts`.
 
 ## Architecture
 
-**Stack**: Next.js 16 (App Router) + TypeScript + Tailwind CSS + Supabase Realtime
+**Stack**: Next.js 16 (App Router) + TypeScript + Tailwind CSS + Firebase Firestore
 
 The entire app renders from a single route `src/app/page.tsx` (`'use client'`, `force-dynamic`). Phase-based rendering: the active component is determined by `state.phase` (CPU mode) or multiplayer state.
 
 ### CPU vs Multiplayer split
 
 - **CPU mode**: `useGame` hook manages all state locally. Flow: `title → difficulty → drawing → battle → result`
-- **Multiplayer mode**: `MultiplayerGame` component wraps everything; `useMultiplayerGame` hook syncs state via Supabase Realtime
+- **Multiplayer mode**: `MultiplayerGame` component wraps everything; `useMultiplayerGame` hook syncs state via Firestore `onSnapshot`
 
-### Supabase Realtime sync (`useMultiplayerGame.ts`)
+### Firestore Realtime sync (`useMultiplayerGame.ts`)
 
-- The `rooms` table is the single source of truth
-- Both players subscribe to `UPDATE` events on their room's `code`
+- The `rooms` collection is the single source of truth; document ID = room code
+- Both players subscribe to their room document via `onSnapshot`
 - **Host-only logic**: Battle start, card evaluation, round results, and score updates are computed only by the host (`roleRef.current === 'host'`) to avoid race conditions
+- **`nextRound` uses a transaction** to prevent double-execution when both players click simultaneously (checks `battle_sub_phase === 'reveal'` inside the transaction)
 - `useRef` pattern: `roomRef` and `roleRef` mirror state so async callbacks always read fresh values without stale closures
-- `createRoom(settings, name)` inserts with `host_name`; `joinRoom(code, name)` updates with `guest_name` and flips `status` to `'drawing'`
+- `createRoom(settings, name)` uses `setDoc`; `joinRoom(code, name)` uses `getDoc` then `updateDoc`
 
 ### Game flow (multiplayer)
 
@@ -49,19 +54,20 @@ The entire app renders from a single route `src/app/page.tsx` (`'use client'`, `
 - **battle**: Turn-based; attacker selects card, defender selects card, then reveal. Host determines outcome and writes `round_results`, `host_score`, `guest_score`, `current_attacker`
 - **result**: Final scores shown; host can create new room
 
+### Firestore Security Rules
+
+Rules are in `firestore.rules`. Deploy via Firebase CLI: `firebase deploy --only firestore:rules`.
+Policy: anonymous read/create/update allowed; delete not allowed (cleanup is manual or via Cloud Scheduler).
+
 ### Wikipedia cards (`src/lib/wikipedia.ts`)
 
 Cards are fetched from the Wikipedia API. Each `WikiCard` has a `power` value derived from article metadata. The total hand power determines who attacks first.
 
 ### Key types
 
-- `Room` (`src/types/room.ts`): Full DB row shape including `host_name`, `guest_name`, all hand/field/score fields
+- `Room` (`src/types/room.ts`): Full document shape including `host_name`, `guest_name`, all hand/field/score fields
 - `RoomStatus`: `'waiting' | 'drawing' | 'battle' | 'result'`
 - `RoomBattleSubPhase`: `'attacker_select' | 'defender_select' | 'reveal'`
-
-### Database schema
-
-Schema is in `supabase/schema.sql`. Run in the Supabase SQL Editor to initialize or update. RLS is enabled with a single "allow all for anon" policy. Realtime is enabled via `alter publication supabase_realtime add table rooms`.
 
 ### Derived display values
 

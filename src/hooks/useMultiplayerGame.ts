@@ -1,6 +1,10 @@
 'use client'
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { supabase } from '@/lib/supabase'
+import {
+  doc, collection, setDoc, updateDoc, getDoc, getDocs,
+  onSnapshot, query, where, runTransaction,
+} from 'firebase/firestore'
+import { db } from '@/lib/firestore'
 import { Room, PlayerRole, RoomSettings, MultiplayerRoundResult } from '@/types/room'
 import { WikiCard } from '@/types/game'
 import { fetchRandomCards } from '@/lib/wikipedia'
@@ -21,18 +25,14 @@ export function useMultiplayerGame() {
   roomRef.current = room
   roleRef.current = role
 
-  // Supabase リアルタイム購読
+  // Firestore リアルタイム購読
   useEffect(() => {
     if (!room?.code) return
-    const channel = supabase
-      .channel(`room:${room.code}`)
-      .on(
-        'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'rooms', filter: `code=eq.${room.code}` },
-        (payload) => setRoom(payload.new as Room),
-      )
-      .subscribe()
-    return () => { supabase.removeChannel(channel) }
+    const unsubscribe = onSnapshot(
+      doc(db, 'rooms', room.code),
+      (snap) => { if (snap.exists()) setRoom(snap.data() as Room) },
+    )
+    return unsubscribe
   }, [room?.code])
 
   // ホスト側: 両者確認済みになったらバトル開始
@@ -47,11 +47,12 @@ export function useMultiplayerGame() {
     const guestPower = r.guest_hand.reduce((s, c) => s + c.power, 0)
     const playerFirst: PlayerRole = hostPower >= guestPower ? 'host' : 'guest'
 
-    supabase.from('rooms')
-      .update({ status: 'battle', player_first: playerFirst, current_attacker: playerFirst, battle_sub_phase: 'attacker_select' })
-      .eq('code', r.code)
-      .eq('status', 'drawing')
-      .then()
+    updateDoc(doc(db, 'rooms', r.code), {
+      status: 'battle',
+      player_first: playerFirst,
+      current_attacker: playerFirst,
+      battle_sub_phase: 'attacker_select',
+    }).catch(() => { /* 既に更新済みなら無視 */ })
   }, [room?.host_confirmed, room?.guest_confirmed, room?.host_hand, room?.guest_hand])
 
   // -------- アクション --------
@@ -60,21 +61,40 @@ export function useMultiplayerGame() {
     setLoading(true)
     setError(null)
     try {
-      const { count, error: countErr } = await supabase
-        .from('rooms')
-        .select('*', { count: 'exact', head: true })
-        .in('status', ['waiting', 'drawing', 'battle'])
-      if (countErr) throw countErr
-      if ((count ?? 0) >= 50) throw new Error('現在サーバーが混雑しています。しばらくしてからお試しください。（上限: 100ユーザー）')
+      const activeSnap = await getDocs(
+        query(collection(db, 'rooms'), where('status', 'in', ['waiting', 'drawing', 'battle']))
+      )
+      if (activeSnap.size >= 50) {
+        throw new Error('現在サーバーが混雑しています。しばらくしてからお試しください。（上限: 100ユーザー）')
+      }
 
       const code = generateRoomCode()
-      const { data, error: err } = await supabase
-        .from('rooms')
-        .insert({ code, settings, host_name: name || 'ホスト', host_redraws_left: settings.redrawsLeft, guest_redraws_left: settings.redrawsLeft })
-        .select()
-        .single()
-      if (err) throw err
-      setRoom(data as Room)
+      const newRoom: Room = {
+        code,
+        settings,
+        status: 'waiting',
+        created_at: new Date().toISOString(),
+        host_name: name || 'ホスト',
+        guest_name: null,
+        host_hand: null,
+        guest_hand: null,
+        host_redraws_left: settings.redrawsLeft,
+        guest_redraws_left: settings.redrawsLeft,
+        host_confirmed: false,
+        guest_confirmed: false,
+        player_first: null,
+        current_attacker: null,
+        battle_sub_phase: 'attacker_select',
+        host_field_card: null,
+        guest_field_card: null,
+        host_score: 0,
+        guest_score: 0,
+        round: 0,
+        round_results: [],
+        rematch_code: null,
+      }
+      await setDoc(doc(db, 'rooms', code), newRoom)
+      setRoom(newRoom)
       setRole('host')
     } catch (e: unknown) {
       console.error('createRoom error:', e)
@@ -89,21 +109,17 @@ export function useMultiplayerGame() {
     setLoading(true)
     setError(null)
     try {
-      const { data, error: err } = await supabase
-        .from('rooms')
-        .select()
-        .eq('code', code.trim())
-        .eq('status', 'waiting')
-        .single()
-      if (err || !data) throw new Error('ルームが見つかりません')
+      const snap = await getDoc(doc(db, 'rooms', code.trim()))
+      if (!snap.exists()) throw new Error('ルームが見つかりません')
+      const data = snap.data() as Room
+      if (data.status !== 'waiting') throw new Error('ルームが見つかりません')
 
-      const { error: updErr } = await supabase
-        .from('rooms')
-        .update({ status: 'drawing', guest_name: name || 'ゲスト' })
-        .eq('code', data.code)
-      if (updErr) throw updErr
+      await updateDoc(doc(db, 'rooms', code.trim()), {
+        status: 'drawing',
+        guest_name: name || 'ゲスト',
+      })
 
-      setRoom({ ...(data as Room), status: 'drawing' })
+      setRoom({ ...data, status: 'drawing', guest_name: name || 'ゲスト' })
       setRole('guest')
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'ルームへの参加に失敗しました。')
@@ -124,7 +140,7 @@ export function useMultiplayerGame() {
     try {
       const hand = await fetchRandomCards(r.settings.handSize)
       const update = rl === 'host' ? { host_hand: hand } : { guest_hand: hand }
-      await supabase.from('rooms').update(update).eq('code', r.code)
+      await updateDoc(doc(db, 'rooms', r.code), update)
     } catch {
       setError('カードの取得に失敗しました。')
     } finally {
@@ -145,7 +161,7 @@ export function useMultiplayerGame() {
       const update = rl === 'host'
         ? { host_hand: hand, host_redraws_left: redrawsLeft - 1 }
         : { guest_hand: hand, guest_redraws_left: redrawsLeft - 1 }
-      await supabase.from('rooms').update(update).eq('code', r.code)
+      await updateDoc(doc(db, 'rooms', r.code), update)
     } catch {
       setError('カードの取得に失敗しました。')
     } finally {
@@ -158,7 +174,7 @@ export function useMultiplayerGame() {
     const rl = roleRef.current
     if (!r || !rl) return
     const update = rl === 'host' ? { host_confirmed: true } : { guest_confirmed: true }
-    await supabase.from('rooms').update(update).eq('code', r.code)
+    await updateDoc(doc(db, 'rooms', r.code), update)
   }, [])
 
   const playCard = useCallback(async (card: WikiCard) => {
@@ -180,59 +196,69 @@ export function useMultiplayerGame() {
       ? { host_hand: newHand, host_field_card: card, battle_sub_phase: nextSubPhase }
       : { guest_hand: newHand, guest_field_card: card, battle_sub_phase: nextSubPhase }
 
-    await supabase.from('rooms').update(update).eq('code', r.code)
+    await updateDoc(doc(db, 'rooms', r.code), update)
   }, [])
 
+  // トランザクションで battle_sub_phase の二重実行を防止
   const nextRound = useCallback(async () => {
     const r = roomRef.current
-    if (!r || r.battle_sub_phase !== 'reveal') return
-    if (!r.host_field_card || !r.guest_field_card) return
+    if (!r) return
 
-    let hostScore = r.host_score
-    let guestScore = r.guest_score
-    let winner: 'host' | 'guest' | 'draw'
+    await runTransaction(db, async (tx) => {
+      const snap = await tx.get(doc(db, 'rooms', r.code))
+      if (!snap.exists()) return
+      const current = snap.data() as Room
+      if (current.battle_sub_phase !== 'reveal') return
+      if (!current.host_field_card || !current.guest_field_card) return
 
-    if (r.host_field_card.power > r.guest_field_card.power) {
-      winner = 'host'; hostScore++
-    } else if (r.guest_field_card.power > r.host_field_card.power) {
-      winner = 'guest'; guestScore++
-    } else {
-      winner = 'draw'
-    }
+      let hostScore = current.host_score
+      let guestScore = current.guest_score
+      let winner: 'host' | 'guest' | 'draw'
 
-    const result: MultiplayerRoundResult = {
-      round: r.round,
-      hostCard: r.host_field_card,
-      guestCard: r.guest_field_card,
-      winner,
-      attackerRole: r.current_attacker!,
-    }
-    const newResults = [...r.round_results, result]
-    const nextRoundNum = r.round + 1
+      if (current.host_field_card.power > current.guest_field_card.power) {
+        winner = 'host'; hostScore++
+      } else if (current.guest_field_card.power > current.host_field_card.power) {
+        winner = 'guest'; guestScore++
+      } else {
+        winner = 'draw'
+      }
 
-    if (nextRoundNum >= r.settings.rounds) {
-      await supabase.from('rooms')
-        .update({ status: 'result', host_score: hostScore, guest_score: guestScore, round_results: newResults })
-        .eq('code', r.code)
-        .eq('battle_sub_phase', 'reveal')
-      return
-    }
+      const result: MultiplayerRoundResult = {
+        round: current.round,
+        hostCard: current.host_field_card,
+        guestCard: current.guest_field_card,
+        winner,
+        attackerRole: current.current_attacker!,
+      }
+      const newResults = [...current.round_results, result]
+      const nextRoundNum = current.round + 1
 
-    const nextAttacker: PlayerRole =
-      nextRoundNum % 2 === 0
-        ? r.player_first!
-        : (r.player_first === 'host' ? 'guest' : 'host')
+      if (nextRoundNum >= current.settings.rounds) {
+        tx.update(snap.ref, {
+          status: 'result',
+          host_score: hostScore,
+          guest_score: guestScore,
+          round_results: newResults,
+        })
+        return
+      }
 
-    await supabase.from('rooms')
-      .update({
-        host_score: hostScore, guest_score: guestScore,
-        round: nextRoundNum, current_attacker: nextAttacker,
-        host_field_card: null, guest_field_card: null,
+      const nextAttacker: PlayerRole =
+        nextRoundNum % 2 === 0
+          ? current.player_first!
+          : (current.player_first === 'host' ? 'guest' : 'host')
+
+      tx.update(snap.ref, {
+        host_score: hostScore,
+        guest_score: guestScore,
+        round: nextRoundNum,
+        current_attacker: nextAttacker,
+        host_field_card: null,
+        guest_field_card: null,
         battle_sub_phase: 'attacker_select',
         round_results: newResults,
       })
-      .eq('code', r.code)
-      .eq('battle_sub_phase', 'reveal')
+    })
   }, [])
 
   const requestRematch = useCallback(async () => {
@@ -244,16 +270,33 @@ export function useMultiplayerGame() {
     setError(null)
     try {
       const newCode = generateRoomCode()
-      const { data, error: err } = await supabase
-        .from('rooms')
-        .insert({ code: newCode, settings: r.settings, host_name: r.host_name, host_redraws_left: r.settings.redrawsLeft, guest_redraws_left: r.settings.redrawsLeft })
-        .select()
-        .single()
-      if (err) throw err
-
-      await supabase.from('rooms').update({ rematch_code: newCode }).eq('code', r.code)
-
-      setRoom(data as Room)
+      const newRoom: Room = {
+        code: newCode,
+        settings: r.settings,
+        status: 'waiting',
+        created_at: new Date().toISOString(),
+        host_name: r.host_name,
+        guest_name: null,
+        host_hand: null,
+        guest_hand: null,
+        host_redraws_left: r.settings.redrawsLeft,
+        guest_redraws_left: r.settings.redrawsLeft,
+        host_confirmed: false,
+        guest_confirmed: false,
+        player_first: null,
+        current_attacker: null,
+        battle_sub_phase: 'attacker_select',
+        host_field_card: null,
+        guest_field_card: null,
+        host_score: 0,
+        guest_score: 0,
+        round: 0,
+        round_results: [],
+        rematch_code: null,
+      }
+      await setDoc(doc(db, 'rooms', newCode), newRoom)
+      await updateDoc(doc(db, 'rooms', r.code), { rematch_code: newCode })
+      setRoom(newRoom)
       setRole('host')
     } catch (e: unknown) {
       console.error('requestRematch error:', e)
@@ -271,19 +314,16 @@ export function useMultiplayerGame() {
     if (!r?.rematch_code) return
 
     const newCode = r.rematch_code
-    const guestName = r.guest_name ?? 'ゲスト';
+    const guestName = r.guest_name ?? 'ゲスト'
 
-    (async () => {
+    ;(async () => {
       try {
-        const { data, error: updErr } = await supabase
-          .from('rooms')
-          .update({ status: 'drawing', guest_name: guestName })
-          .eq('code', newCode)
-          .eq('status', 'waiting')
-          .select()
-          .single()
-        if (updErr || !data) return
-        setRoom(data as Room)
+        const snap = await getDoc(doc(db, 'rooms', newCode))
+        if (!snap.exists()) return
+        const data = snap.data() as Room
+        if (data.status !== 'waiting') return
+        await updateDoc(doc(db, 'rooms', newCode), { status: 'drawing', guest_name: guestName })
+        setRoom({ ...data, status: 'drawing', guest_name: guestName })
         setRole('guest')
       } catch { /* ignore */ }
     })()
