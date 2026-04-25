@@ -2,7 +2,7 @@
   "firestore": {
     "database": "(default)",
     "location": "nam5",
-    "rules": "c:\\Users\\Kazuyuki\\Apps\\wikipedia-card-battle\\firestore.rules",
+    "rules": "firestore.rules",
     "indexes": "firestore.indexes.json"
   }
 }

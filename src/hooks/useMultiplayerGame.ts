@@ -1,8 +1,8 @@
 'use client'
 import { useState, useEffect, useCallback, useRef } from 'react'
 import {
-  doc, collection, setDoc, updateDoc, getDoc, getDocs,
-  onSnapshot, query, where, runTransaction,
+  doc, setDoc, updateDoc, getDoc,
+  onSnapshot, runTransaction,
 } from 'firebase/firestore'
 import { db } from '@/lib/firestore'
 import { Room, PlayerRole, RoomSettings, MultiplayerRoundResult } from '@/types/room'
@@ -61,13 +61,6 @@ export function useMultiplayerGame() {
     setLoading(true)
     setError(null)
     try {
-      const activeSnap = await getDocs(
-        query(collection(db, 'rooms'), where('status', 'in', ['waiting', 'drawing', 'battle']))
-      )
-      if (activeSnap.size >= 50) {
-        throw new Error('現在サーバーが混雑しています。しばらくしてからお試しください。（上限: 100ユーザー）')
-      }
-
       const code = generateRoomCode()
       const newRoom: Room = {
         code,
